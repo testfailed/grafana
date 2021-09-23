@@ -1,20 +1,29 @@
 package api
 
 import (
+	macaron "gopkg.in/macaron.v1"
+
 	"github.com/grafana/grafana/pkg/api/response"
 	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/models"
 	"github.com/grafana/grafana/pkg/setting"
-	macaron "gopkg.in/macaron.v1"
 )
 
-func GetOrgQuotas(c *models.ReqContext) response.Response {
-	if !setting.Quota.Enabled {
+func (hs *HTTPServer) GetCurrentOrgQuotas(c *models.ReqContext) response.Response {
+	return hs.getOrgQuotasHelper(c, c.OrgId)
+}
+
+func (hs *HTTPServer) GetOrgQuotas(c *models.ReqContext) response.Response {
+	return hs.getOrgQuotasHelper(c, c.ParamsInt64(":orgId"))
+}
+
+func (hs *HTTPServer) getOrgQuotasHelper(c *models.ReqContext, orgID int64) response.Response {
+	if !hs.Cfg.Quota.Enabled {
 		return response.Error(404, "Quotas not enabled", nil)
 	}
-	query := models.GetOrgQuotasQuery{OrgId: c.ParamsInt64(":orgId")}
+	query := models.GetOrgQuotasQuery{OrgId: orgID}
 
-	if err := bus.DispatchCtx(c.Req.Context(), &query); err != nil {
+	if err := hs.SQLStore.GetOrgQuotas(c.Req.Context(), &query); err != nil {
 		return response.Error(500, "Failed to get org quotas", err)
 	}
 
