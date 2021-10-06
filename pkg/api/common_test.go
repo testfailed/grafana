@@ -249,16 +249,49 @@ type accessControlTestCase struct {
 	permissions  []*accesscontrol.Permission
 }
 
+// accessControlScenarioContext contains the setups for accesscontrol tests
+type accessControlScenarioContext struct {
+	// server is the macaron server we registered hs routes on.
+	server *macaron.Macaron
+
+	// initCtx is used in a middleware to set the initial context
+	// of the request server side. Can be used to pretend sign in.
+	initCtx *models.ReqContext
+
+	// hs is a minimal HTTPServer for the accesscontrol tests to pass.
+	hs *HTTPServer
+
+	// acmock is an accesscontrol mock used to fake users rights.
+	acmock *accesscontrolmock.Mock
+
+	// db is a test database initialized with InitTestDB
+	db *sqlstore.SQLStore
+
+	// cfg is the setting provider
+	cfg *setting.Cfg
+}
+
 func setAccessControlPermissions(acmock *accesscontrolmock.Mock, perms []*accesscontrol.Permission) {
 	acmock.GetUserPermissionsFunc = func(_ context.Context, _ *models.SignedInUser) ([]*accesscontrol.Permission, error) {
 		return perms, nil
 	}
 }
 
-func setupHTTPServer(t *testing.T, enableAccessControl bool, signedInUser *models.SignedInUser) (*macaron.Macaron, *HTTPServer, *accesscontrolmock.Mock) {
+func setInitCtxSignedInViewer(initCtx *models.ReqContext) {
+	initCtx.IsSignedIn = true
+	initCtx.SignedInUser = &models.SignedInUser{UserId: testUserID, OrgId: 1, OrgRole: models.ROLE_VIEWER, Login: testUserLogin}
+}
+
+func setInitCtxSignedInOrgAdmin(initCtx *models.ReqContext) {
+	initCtx.IsSignedIn = true
+	initCtx.SignedInUser = &models.SignedInUser{UserId: testUserID, OrgId: 1, OrgRole: models.ROLE_ADMIN, Login: testUserLogin}
+}
+
+func setupHTTPServer(t *testing.T, enableAccessControl bool) accessControlScenarioContext {
 	t.Helper()
 
 	// Use an accesscontrol mock
+	// (has to be defined before registering routes)
 	acmock := accesscontrolmock.New()
 	if !enableAccessControl {
 		acmock = acmock.WithDisabled()
@@ -290,24 +323,26 @@ func setupHTTPServer(t *testing.T, enableAccessControl bool, signedInUser *model
 	// Instantiate a new Server
 	m := macaron.New()
 
-	// Pretend middleware to sign the user in
-	if signedInUser != nil {
-		m.Use(func(c *macaron.Context) {
-			ctx := &models.ReqContext{
-				Context:      c,
-				IsSignedIn:   true,
-				SignedInUser: signedInUser,
-				Logger:       log.New("api-test"),
-			}
-			c.Map(ctx)
-		})
-	}
+	// middleware to set the test initial context
+	initCtx := &models.ReqContext{}
+	m.Use(func(c *macaron.Context) {
+		initCtx.Context = c
+		initCtx.Logger = log.New("api-test")
+		c.Map(initCtx)
+	})
 
 	// Register all routes
 	hs.registerRoutes()
 	hs.RouteRegister.Register(m.Router)
 
-	return m, hs, acmock
+	return accessControlScenarioContext{
+		server:  m,
+		initCtx: initCtx,
+		hs:      hs,
+		acmock:  acmock,
+		db:      db,
+		cfg:     cfg,
+	}
 }
 
 func callAPI(server *macaron.Macaron, method, path string, body io.Reader, t *testing.T) *httptest.ResponseRecorder {
