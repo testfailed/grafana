@@ -290,17 +290,20 @@ func setInitCtxSignedInOrgAdmin(initCtx *models.ReqContext) {
 func setupHTTPServer(t *testing.T, enableAccessControl bool) accessControlScenarioContext {
 	t.Helper()
 
-	// Use an accesscontrol mock
-	// (has to be defined before registering routes)
-	acmock := accesscontrolmock.New()
-	if !enableAccessControl {
-		acmock = acmock.WithDisabled()
-	}
-
 	// Use a new conf
 	cfg := setting.NewCfg()
 	cfg.FeatureToggles = make(map[string]bool)
-	cfg.FeatureToggles["accesscontrol"] = enableAccessControl
+
+	// Use an accesscontrol mock
+	acmock := accesscontrolmock.New()
+
+	// Handle accesscontrol enablement
+	if enableAccessControl {
+		cfg.FeatureToggles["accesscontrol"] = enableAccessControl
+	} else {
+		// Disabling accesscontrol has to be done before registering routes
+		acmock = acmock.WithDisabled()
+	}
 
 	// Use a test DB
 	db := sqlstore.InitTestDB(t)
