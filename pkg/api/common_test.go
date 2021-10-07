@@ -320,7 +320,7 @@ func setupHTTPServer(t *testing.T, enableAccessControl bool) accessControlScenar
 		RouteRegister:      routing.NewRouteRegister(),
 		AccessControl:      acmock,
 		SQLStore:           db,
-		searchUsersService: searchusers.ProvideUsersService(bus),
+		searchUsersService: searchusers.ProvideUsersService(bus, filters.ProvideOSSSearchUserFilter()),
 	}
 
 	// Instantiate a new Server
