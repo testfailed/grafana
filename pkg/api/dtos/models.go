@@ -64,7 +64,7 @@ func GetGravatarUrl(text string) string {
 
 	hasher := md5.New()
 	if _, err := hasher.Write([]byte(strings.ToLower(text))); err != nil {
-		log.Warnf("Failed to hash text: %s", err)
+		log.Infof("Failed to hash text: %s", err)
 	}
 	return fmt.Sprintf(setting.AppSubUrl+"/avatar/%x", hasher.Sum(nil))
 }
