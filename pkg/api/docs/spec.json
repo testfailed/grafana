@@ -1,0 +1,319 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "swagger": "2.0",
+  "info": {
+    "title": "Grafana HTTP API.",
+    "version": "0.0.1"
+  },
+  "host": "localhost:10081",
+  "basePath": "/api",
+  "paths": {
+    "/auth/keys": {
+      "get": {
+        "description": "Will return auth keys.",
+        "tags": [
+          "apikeys"
+        ],
+        "summary": "Get auth keys",
+        "operationId": "getAPIkeys",
+        "parameters": [
+          {
+            "type": "boolean",
+            "default": false,
+            "description": "Show expired keys",
+            "name": "includeExpired",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "apikeyResponse",
+            "schema": {
+              "$ref": "#/definitions/apikeyResponse"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/notAuthorizedError"
+          },
+          "403": {
+            "$ref": "#/responses/forbiddenError"
+          },
+          "404": {
+            "$ref": "#/responses/notFoundError"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      },
+      "post": {
+        "description": "Will return details of the created API key",
+        "tags": [
+          "apikeys"
+        ],
+        "summary": "Creates an API key",
+        "operationId": "addAPIkey",
+        "parameters": [
+          {
+            "name": "Body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/addAPIkeyCmd"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "newAPIkeyResponse",
+            "schema": {
+              "$ref": "#/definitions/newAPIkeyResponse"
+            }
+          },
+          "400": {
+            "$ref": "#/responses/badRequestError"
+          },
+          "401": {
+            "$ref": "#/responses/notAuthorizedError"
+          },
+          "403": {
+            "$ref": "#/responses/quotaReachedError"
+          },
+          "409": {
+            "$ref": "#/responses/conflictError"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    },
+    "/auth/keys/{id}": {
+      "delete": {
+        "description": "409: conflictError\nDelete API key",
+        "tags": [
+          "apikeys"
+        ],
+        "operationId": "deleteAPIkey",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/okResponse"
+          },
+          "401": {
+            "$ref": "#/responses/notAuthorizedError"
+          },
+          "403": {
+            "$ref": "#/responses/forbiddenError"
+          },
+          "404": {
+            "$ref": "#/responses/notFoundError"
+          },
+          "409": {
+            "$ref": "#/responses/conflictError"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "AddApiKeyCommand": {
+      "description": "COMMANDS",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/definitions/RoleType"
+        },
+        "secondsToLive": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "ApiKeyDTO": {
+      "type": "object",
+      "properties": {
+        "expiration": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/definitions/RoleType"
+        }
+      }
+    },
+    "ErrorResponseBody": {
+      "type": "object",
+      "required": [
+        "message"
+      ],
+      "properties": {
+        "error": {
+          "description": "Error An optional detailed description of the actual error. Only included if running in developer mode.",
+          "type": "string"
+        },
+        "message": {
+          "description": "a human readable version of the error",
+          "type": "string"
+        },
+        "status": {
+          "description": "Status An optional status to denote the cause of the error.\n\nFor example, a 412 Precondition Failed error may include additional information of why that error happened.",
+          "type": "string"
+        }
+      }
+    },
+    "NewApiKeyResult": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "key": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "RoleType": {
+      "type": "string"
+    },
+    "SuccessResponseBody": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "addAPIkeyCmd": {
+      "$ref": "#/definitions/AddApiKeyCommand"
+    },
+    "apikeyResponse": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ApiKeyDTO"
+      }
+    },
+    "newAPIkeyResponse": {
+      "$ref": "#/definitions/NewApiKeyResult"
+    }
+  },
+  "responses": {
+    "badRequestError": {
+      "description": "A BadRequestError is used when the request is invalid and it cann't be processed.",
+      "schema": {
+        "$ref": "#/definitions/ErrorResponseBody"
+      }
+    },
+    "conflictError": {
+      "description": "ConflictError",
+      "schema": {
+        "$ref": "#/definitions/ErrorResponseBody"
+      }
+    },
+    "forbiddenError": {
+      "description": "A ForbiddenError is used if the user/token has insufficient permission to access the requested resource.",
+      "schema": {
+        "$ref": "#/definitions/ErrorResponseBody"
+      }
+    },
+    "genericError": {
+      "description": "A GenericError is the default error message that is generated.\nFor certain status codes there are more appropriate error structures.",
+      "schema": {
+        "$ref": "#/definitions/ErrorResponseBody"
+      }
+    },
+    "internalServerError": {
+      "description": "InternalServerError",
+      "schema": {
+        "$ref": "#/definitions/ErrorResponseBody"
+      }
+    },
+    "notAuthorizedError": {
+      "description": "NotAuthorizedError The request is not authenticated.",
+      "schema": {
+        "$ref": "#/definitions/ErrorResponseBody"
+      }
+    },
+    "notFoundError": {
+      "description": "A NotFoundError is used when the requested resource was not found.",
+      "schema": {
+        "$ref": "#/definitions/ErrorResponseBody"
+      }
+    },
+    "okResponse": {
+      "description": "OKResponse",
+      "schema": {
+        "$ref": "#/definitions/SuccessResponseBody"
+      }
+    },
+    "preconditionFailedError": {
+      "description": "PreconditionFailedError",
+      "schema": {
+        "$ref": "#/definitions/ErrorResponseBody"
+      }
+    },
+    "quotaReachedError": {
+      "description": "QuotaReachedError Quota reached for this resource.",
+      "schema": {
+        "$ref": "#/definitions/ErrorResponseBody"
+      }
+    },
+    "unprocessableEntityError": {
+      "description": "UnprocessableEntityError",
+      "schema": {
+        "$ref": "#/definitions/ErrorResponseBody"
+      }
+    }
+  },
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header"
+    },
+    "basic": {
+      "type": "basic"
+    }
+  },
+  "security": [
+    {
+      "basic": []
+    },
+    {
+      "api_key": []
+    }
+  ]
+}
