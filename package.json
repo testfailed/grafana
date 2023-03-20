@@ -83,7 +83,7 @@
     "@grafana/api-documenter": "7.11.2",
     "@grafana/api-extractor": "7.10.1",
     "@grafana/e2e": "workspace:*",
-    "@grafana/eslint-config": "2.5.0",
+    "@grafana/eslint-config": "5.1.0",
     "@grafana/toolkit": "workspace:*",
     "@grafana/tsconfig": "^1.0.0-rc1",
     "@kusto/monaco-kusto": "4.0.6",
